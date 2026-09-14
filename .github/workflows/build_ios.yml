@@ -1,0 +1,57 @@
+name: Compilar iOS (.ipa) para iPhone
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    name: Compilar App Nativa iOS
+    runs-on: macos-latest
+
+    steps:
+      - name: 1. Descargar Código Fuente
+        uses: actions/checkout@v4
+
+      - name: 2. Configurar Java para herramientas auxiliares
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: 3. Configurar Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: 4. Instalar Dependencias de Flutter
+        run: |
+          cd mobile_app
+          flutter pub get
+
+      - name: 5. Instalar CocoaPods
+        run: |
+          cd mobile_app/ios
+          pod install
+
+      - name: 6. Compilar Release de iOS (Sin firma forzada)
+        run: |
+          cd mobile_app
+          flutter build ios --release --no-codesign
+
+      - name: 7. Empaquetar Payload en archivo .ipa
+        run: |
+          cd mobile_app/build/ios/iphoneos
+          mkdir Payload
+          cp -r Runner.app Payload/
+          zip -r BallonFollow.ipa Payload
+          mv BallonFollow.ipa ../../../
+
+      - name: 8. Subir Artefacto .ipa para Descarga
+        uses: actions/upload-artifact@v4
+        with:
+          name: BallonFollow-iPhone-IPA
+          path: mobile_app/BallonFollow.ipa
+          retention-days: 14

@@ -1,0 +1,6 @@
+# Requisitos para entrenamiento, exportación y pruebas de visión
+ultralytics>=8.1.0
+opencv-python>=4.9.0
+numpy>=1.26.0
+tensorflow>=2.15.0; platform_system != "Darwin" or platform_machine != "arm64"
+matplotlib>=3.8.0
