@@ -26,15 +26,19 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: 4. Instalar Dependencias de Flutter
+      - name: 4. Inicializar y Configurar Proyecto Nativo iOS
         run: |
           cd mobile_app
+          flutter create --platforms=ios --org com.balltracker .
           flutter pub get
 
-      - name: 5. Instalar CocoaPods
+      - name: 5. Inyectar Permisos en Info.plist
         run: |
-          cd mobile_app/ios
-          pod install
+          PLIST="mobile_app/ios/Runner/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :NSCameraUsageDescription 'Se requiere acceso a la camara para seguir el balon.'" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string 'Se requiere acceso a la camara para seguir el balon.'" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Set :NSMicrophoneUsageDescription 'Se requiere microfono para grabar el audio del partido.'" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :NSMicrophoneUsageDescription string 'Se requiere microfono para grabar el audio del partido.'" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Set :NSBluetoothAlwaysUsageDescription 'Se requiere Bluetooth para comunicarse con el soporte ESP32.'" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :NSBluetoothAlwaysUsageDescription string 'Se requiere Bluetooth para comunicarse con el soporte ESP32.'" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Set :NSBluetoothPeripheralUsageDescription 'Se requiere Bluetooth para controlar el giro del ESP32.'" "$PLIST" || /usr/libexec/PlistBuddy -c "Add :NSBluetoothPeripheralUsageDescription string 'Se requiere Bluetooth para controlar el giro del ESP32.'" "$PLIST"
 
       - name: 6. Compilar Release de iOS (Sin firma forzada)
         run: |
@@ -43,15 +47,15 @@ jobs:
 
       - name: 7. Empaquetar Payload en archivo .ipa
         run: |
-          cd mobile_app/build/ios/iphoneos
-          mkdir Payload
-          cp -r Runner.app Payload/
-          zip -r BallonFollow.ipa Payload
-          mv BallonFollow.ipa ../../../
+          cd mobile_app
+          mkdir -p build/ios/ipa/Payload
+          cp -r build/ios/iphoneos/Runner.app build/ios/ipa/Payload/
+          cd build/ios/ipa
+          zip -r ../../../BallonFollow.ipa Payload
 
       - name: 8. Subir Artefacto .ipa para Descarga
         uses: actions/upload-artifact@v4
         with:
           name: BallonFollow-iPhone-IPA
-          path: mobile_app/BallonFollow.ipa
+          path: BallonFollow.ipa
           retention-days: 14
